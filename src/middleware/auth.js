@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const config = require('../config');
 const { UnauthorizedError, ForbiddenError } = require('../errors');
-const { userStore } = require('../store');
+const { userStore, eventStore } = require('../store');
 
 function authenticate(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -32,7 +32,17 @@ function requireRole(role) {
   };
 }
 
+function requireEventOwner(req, res, next) {
+  const event = eventStore.getByIdOrThrow(req.params.id);
+  if (event.organizerId !== req.user.id) {
+    throw new ForbiddenError('You can only modify your own events');
+  }
+  req.event = event;
+  next();
+}
+
 module.exports = {
   authenticate,
   requireRole,
+  requireEventOwner,
 };
