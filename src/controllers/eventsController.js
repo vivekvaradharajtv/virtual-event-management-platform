@@ -1,5 +1,7 @@
 const { eventStore } = require('../store');
+const { ConflictError } = require('../errors');
 const { successRes } = require('../utils/response');
+const emailService = require('../services/email');
 
 async function list(req, res) {
   const events = eventStore.getAll();
@@ -39,10 +41,24 @@ async function remove(req, res) {
   return res.status(204).send();
 }
 
+async function registerForEvent(req, res) {
+  const eventId = req.params.id;
+  const event = eventStore.getByIdOrThrow(eventId);
+  if (event.participantIds.includes(req.user.id)) {
+    throw new ConflictError('Already registered for this event');
+  }
+  const updated = eventStore.addParticipant(eventId, req.user.id);
+  emailService.sendRegistrationEmail(req.user.email, updated).catch((err) => {
+    console.error('Failed to send registration email:', err);
+  });
+  return successRes(res, 201, updated);
+}
+
 module.exports = {
   list,
   getById,
   create,
   update,
   remove,
+  registerForEvent,
 };

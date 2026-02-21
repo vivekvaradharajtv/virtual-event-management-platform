@@ -31,4 +31,10 @@ router.delete(
   asyncHandler(eventsController.remove)
 );
 
+router.post(
+  '/:id/register',
+  authenticate,
+  asyncHandler(eventsController.registerForEvent)
+);
+
 module.exports = router;
